@@ -90,7 +90,7 @@
     <div class="logo-text text-center">
         <h4 class="mb-0">KAGATAU</h4>
         <small class="text-info fw-bold" style="font-size: 9px; opacity: 0.8;">
-            RUTAN REMBANG SERVICE
+            RUTAN REMBANG
         </small>
     </div>
 
@@ -102,7 +102,7 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="nav-link">
+                <a href="/layanan" class="nav-link {{ Request::is('layanan*') ? 'active' : '' }}">
                     <i class="bi bi-briefcase-fill me-3"></i> Data Layanan
                 </a>
             </li>

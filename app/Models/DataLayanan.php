@@ -15,13 +15,14 @@ class DataLayanan extends Model
     protected $table = 'data_layanan';
 
     protected $fillable = [
-        'tanggal_layanan',
-        'penitip_id',
-        'hp_manual',
-        'screenshot',
-        'dokumentasi',
-        'status'
-    ];
+    'tanggal_layanan',
+    'penitip_id',
+    'hubungan', // Tambahkan ini
+    'hp_manual',
+    'screenshot',
+    'dokumentasi',
+    'status'
+];
 
     // Relasi ke tabel Penitip (Database Utama)
     public function keluarga()

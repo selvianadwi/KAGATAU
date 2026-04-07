@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TahananController;
 use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\LayananController;
 
 // Hapus .php dan ganti jadi ::class
 Route::get('/', [DashboardController::class, 'index']);
@@ -31,3 +32,8 @@ Route::put('/penitip/{id}', [PenitipController::class, 'update'])->name('penitip
 
 Route::get('/setting', [SettingController::class, 'index'])->name('setting.index');
 Route::post('/setting/update', [SettingController::class, 'update'])->name('setting.update');
+
+Route::get('layanan/{id}/layani', [LayananController::class, 'layani'])->name('layanan.layani');
+Route::resource('layanan', LayananController::class);
+Route::get('layanan/{id}/layani', [App\Http\Controllers\LayananController::class, 'layani'])->name('layanan.layani');
+Route::resource('layanan', App\Http\Controllers\LayananController::class);

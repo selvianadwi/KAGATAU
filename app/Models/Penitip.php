@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Penitip extends Model
 {
-    protected $table = 'penitip';
+    protected $connection = 'mysql'; 
+    protected $table = 'penitip'; // Pastikan sesuai nama tabel di DB sipirman (penitip atau penitips)
     protected $primaryKey = 'id';
     public $timestamps = false;
 
