@@ -51,41 +51,49 @@
                     <thead class="table-dark text-nowrap">
                         <tr>
                             <th width="60" class="text-center py-3 border-0">No</th>
-                            <th class="py-3 border-0">Kode Tahanan</th>
-                            <th class="py-3 border-0">Nama</th>
-                            <th class="py-3 border-0">Nama Ayah</th>
-                            <th class="py-3 border-0">Jenis Kelamin</th>
-                            <th width="120" class="text-center py-3 border-0">Opsi</th>
+                            <th class="py-3 border-0 px-4">Kode Tahanan</th> 
+                            <th class="py-3 border-0">Nama Lengkap</th> 
+                            <th class="py-3 border-0">Nama Ayah</th> 
+                            <th class="py-3 border-0 text-center">Jenis Kelamin</th> 
+                            <th width="140" class="text-center py-3 border-0">Opsi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($tahanans as $index => $t)
+                        @forelse($tahanans as $t)
                         <tr>
-                            <td class="text-center text-muted">{{ $index + 1 }}</td>
-                            
-                            <td class="text-dark">{{ $t->code_napi }}</td>
-                            
-                            <td class="fw-semibold text-dark">{{ $t->nama }}</td>
-                            <td>{{ $t->nama_ayah }}</td>
-                            <td>
-                                @if($t->jenis_kelamin == 'Pria')
-                                    <i class="bi bi-gender-male text-primary me-1"></i>
-                                @else
-                                    <i class="bi bi-gender-female text-danger me-1"></i>
-                                @endif
-                                {{ $t->jenis_kelamin }}
+                            <td class="text-center text-muted small">
+                                {{ ($tahanans->currentPage() - 1) * $tahanans->perPage() + $loop->iteration }}
                             </td>
-                            
+                            <td class="px-4"> 
+                                <span class="fw-semibold text-dark">
+                                    {{ $t->code_napi }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-dark">{{ strtoupper($t->nama) }}</td> 
+                            <td>{{ strtoupper($t->nama_ayah) }}</td> 
+                            <td class="text-center"> 
+                                @if ($t->jenis_kelamin == 'Pria')
+                                    <span class="badge bg-primary-subtle text-primary border-primary-subtle px-3 py-2 rounded-pill">
+                                        <i class="bi bi-gender-male me-1"></i> {{ $t->jenis_kelamin }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-danger-subtle text-danger border-danger-subtle px-3 py-2 rounded-pill">
+                                        <i class="bi bi-gender-female me-1"></i> {{ $t->jenis_kelamin }}
+                                    </span>
+                                @endif
+                            </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="#" class="btn btn-warning btn-sm border-0 shadow-sm text-white" title="Edit">
+                                    <a href="{{ route('tahanan.edit', $t->id) }}" 
+                                       class="btn btn-warning btn-sm text-white border-0 shadow-sm" title="Edit Data">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    
-                                    <form action="{{ route('tahanan.destroy', $t->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data tahanan ini?')">
+
+                                    <form action="{{ route('tahanan.destroy', $t->id) }}" method="POST" 
+                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus data tahanan ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm border-0 shadow-sm" title="Hapus">
+                                        <button type="submit" class="btn btn-danger btn-sm border-0 shadow-sm" title="Hapus Data">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -95,13 +103,13 @@
                         @empty
                         <tr>
                             <td colspan="6" class="text-center py-5">
-                                <div class="text-muted">
-                                    <i class="bi bi-search fs-1 mb-3 d-block"></i>
-                                    @if(request('search'))
-                                        <p class="mb-0">Pencarian untuk "<strong>{{ request('search') }}</strong>" tidak ditemukan.</p>
-                                        <a href="{{ route('tahanan.index') }}" class="text-primary text-decoration-none small">Kembali ke semua data</a>
+                                <div class="text-muted small">
+                                    <i class="bi bi-person-x fs-1 mb-3 d-block opacity-50"></i>
+                                    @if (request('search'))
+                                        <p class="mb-1">Pencarian "<strong>{{ request('search') }}</strong>" tidak ditemukan.</p>
+                                        <a href="{{ route('tahanan.index') }}" class="text-primary text-decoration-none fw-bold small">Tampilkan semua data</a>
                                     @else
-                                        <p class="mb-0">Data tahanan belum tersedia.</p>
+                                        <p class="mb-0">Belum ada data tahanan yang tersimpan.</p>
                                     @endif
                                 </div>
                             </td>
@@ -111,35 +119,43 @@
                 </table>
             </div>
         </div>
+        
+        @if($tahanans->hasPages())
+        <div class="card-footer bg-white py-3 d-flex justify-content-center border-top">
+            <div class="pagination-clean">
+                {{ $tahanans->onEachSide(1)->links() }}
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 
 <style>
-    /* Styling agar tampilan konsisten */
-    #main-content {
-        padding-top: 20px;
-        background-color: #f8f9fa;
-        min-height: 100vh;
-    }
-    
+    /* Dasar Layout */
+    #main-content { padding-top: 20px; background-color: #f8f9fa; min-height: 100vh; }
+
+    /* Tabel Header */
     .table thead th {
-        font-weight: 500;
+        font-weight: 600;
         font-size: 0.85rem;
         letter-spacing: 0.5px;
         background-color: #212529;
+        vertical-align: middle !important;
+        text-transform: uppercase;
     }
 
-    .table tbody tr {
-        transition: background-color 0.2s ease;
-    }
+    /* Tabel Body */
+    .table tbody td { vertical-align: middle !important; border-bottom: 1px solid #f2f2f2; }
+    .table tbody tr:hover { background-color: rgba(0, 0, 0, 0.02); }
 
-    .form-control:focus {
-        box-shadow: none;
-        border-color: #0d6efd;
-    }
+    /* Badge & Form */
+    .badge { font-weight: 500; border: 1px solid transparent; }
+    .form-control:focus { box-shadow: none; border-color: #0d6efd; }
 
-    .card {
-        background-color: #ffffff;
-    }
+    /* Pagination Clean Up */
+    .pagination-clean nav div:first-child, .pagination-clean p { display: none !important; }
+    .pagination-clean .pagination { margin-bottom: 0; gap: 5px; }
+    .pagination-clean .page-link { padding: 6px 14px; border-radius: 8px !important; color: #333; border: 1px solid #dee2e6; }
+    .pagination-clean .page-item.active .page-link { background-color: #212529 !important; border-color: #212529 !important; color: #fff !important; }
 </style>
 @endsection

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TahananController;
+use App\Http\Controllers\PenitipController;
+use App\Http\Controllers\SettingController;
 
 // Hapus .php dan ganti jadi ::class
 Route::get('/', [DashboardController::class, 'index']);
@@ -17,3 +19,15 @@ Route::get('/tahanan/create', [TahananController::class, 'create'])->name('tahan
 Route::post('/tahanan/store', [TahananController::class, 'store'])->name('tahanan.store');
 // Tambahkan parameter {id} untuk menentukan data mana yang dihapus
 Route::delete('/tahanan/{id}', [TahananController::class, 'destroy'])->name('tahanan.destroy');
+Route::resource('tahanan', TahananController::class);
+
+
+Route::get('/penitip', [PenitipController::class, 'index'])->name('penitip.index');
+Route::get('/penitip/create', [PenitipController::class, 'create'])->name('penitip.create');
+Route::post('/penitip', [PenitipController::class, 'store'])->name('penitip.store');
+Route::delete('/penitip/{id}', [PenitipController::class, 'destroy'])->name('penitip.destroy');
+Route::get('/penitip/{id}/edit', [PenitipController::class, 'edit'])->name('penitip.edit');
+Route::put('/penitip/{id}', [PenitipController::class, 'update'])->name('penitip.update');
+
+Route::get('/setting', [SettingController::class, 'index'])->name('setting.index');
+Route::post('/setting/update', [SettingController::class, 'update'])->name('setting.update');

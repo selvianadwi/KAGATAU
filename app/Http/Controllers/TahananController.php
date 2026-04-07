@@ -7,68 +7,82 @@ use Illuminate\Http\Request;
 
 class TahananController extends Controller
 {
-    /**
-     * Menampilkan daftar tahanan dengan fitur pencarian.
-     */
     public function index(Request $request)
     {
         $search = $request->query('search');
 
-        // Mengambil data tahanan, jika ada parameter 'search', maka difilter
+        // MENGGUNAKAN paginate() BUKAN get()
+        // withQueryString() berfungsi agar parameter ?search=... tetap ada di URL saat klik next page
         $tahanans = Tahanan::when($search, function ($query, $search) {
             return $query->where('nama', 'like', "%{$search}%")
                          ->orWhere('code_napi', 'like', "%{$search}%");
-        })->get();
+        })
+        ->orderBy('id', 'desc') 
+        ->paginate(10) // Ini kuncinya agar currentPage() di Blade bisa jalan
+        ->withQueryString(); 
 
         return view('tahanan.index', compact('tahanans'));
     }
 
-    /**
-     * Menampilkan form tambah tahanan.
-     */
     public function create()
     {
         return view('tahanan.create');
     }
 
-    /**
-     * Menyimpan data tahanan baru ke database.
-     */
     public function store(Request $request)
     {
-        // Validasi input
-        // 'in:Pria,Wanita' memastikan data sesuai dengan ENUM di database
         $request->validate([
             'code_napi'     => 'required|unique:tahanan,code_napi',
-            'nama'          => 'required',
-            'nama_ayah'     => 'required',
+            'nama'          => 'required|string|max:255',
+            'nama_ayah'     => 'required|string|max:255',
             'jenis_kelamin' => 'required|in:Pria,Wanita',
-        ], [
-            // Custom pesan error (opsional)
-            'code_napi.unique' => 'Code NAPI sudah terdaftar di sistem.',
-            'jenis_kelamin.in' => 'Pilih jenis kelamin yang tersedia.',
+            'perkara'       => 'nullable|string',
         ]);
 
-        // Simpan ke database menggunakan Model Tahanan
         Tahanan::create([
             'code_napi'     => $request->code_napi,
-            'nama'          => $request->nama,
-            'nama_ayah'     => $request->nama_ayah,
+            'nama'          => strtoupper($request->nama),
+            'nama_ayah'     => strtoupper($request->nama_ayah),
             'jenis_kelamin' => $request->jenis_kelamin,
+            'perkara'       => $request->perkara,
         ]);
 
-        // Redirect kembali ke halaman index dengan pesan sukses
         return redirect()->route('tahanan.index')->with('success', 'Data tahanan berhasil ditambahkan!');
     }
 
-    /**
-     * (Opsional) Fitur Hapus Data
-     */
-public function destroy($id)
-{
-    $tahanan = \App\Models\Tahanan::findOrFail($id);
-    $tahanan->delete();
+    public function edit($id)
+    {
+        $tahanan = Tahanan::findOrFail($id);
+        return view('tahanan.edit', compact('tahanan'));
+    }
 
-    return redirect()->route('tahanan.index')->with('success', 'Data tahanan berhasil dihapus!');
-}
+    public function update(Request $request, $id)
+    {
+        $tahanan = Tahanan::findOrFail($id);
+
+        $request->validate([
+            'code_napi'     => 'required|unique:tahanan,code_napi,' . $id,
+            'nama'          => 'required|string|max:255',
+            'nama_ayah'     => 'required|string|max:255',
+            'jenis_kelamin' => 'required|in:Pria,Wanita',
+            'perkara'       => 'nullable|string',
+        ]);
+
+        $tahanan->update([
+            'code_napi'     => $request->code_napi,
+            'nama'          => strtoupper($request->nama),
+            'nama_ayah'     => strtoupper($request->nama_ayah),
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'perkara'       => $request->perkara,
+        ]);
+
+        return redirect()->route('tahanan.index')->with('success', 'Data tahanan berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $tahanan = Tahanan::findOrFail($id);
+        $tahanan->delete();
+        return redirect()->route('tahanan.index')->with('success', 'Data tahanan berhasil dihapus!');
+    }
 }
