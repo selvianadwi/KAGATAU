@@ -24,8 +24,13 @@
                                 <label class="form-label fw-bold text-secondary small text-uppercase">Code NAPI / Tahanan</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-hash"></i></span>
-                                    <input type="text" name="code_napi" class="form-control border-start-0 @error('code_napi') is-invalid @enderror" 
-                                           value="{{ old('code_napi') }}" placeholder="--------">
+                                    {{-- Tambahkan maxlength="10" di sini --}}
+                                    <input type="text" name="code_napi" id="code_napi" 
+                                           class="form-control border-start-0 @error('code_napi') is-invalid @enderror" 
+                                           value="{{ old('code_napi') }}" 
+                                           placeholder="Masukan code sesuai berkas" 
+                                           maxlength="10"
+                                           oninput="if (this.value.length > 10) this.value = this.value.slice(0, 10);">
                                     @error('code_napi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
@@ -81,24 +86,11 @@
             </div>
         </div>
         
-        <div class="col-xl-4 d-none d-xl-block">
-            <div class="card border-0 shadow-sm bg-light" style="border-radius: 15px;">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-primary"><i class="bi bi-lightbulb me-2"></i>Petunjuk Pengisian</h6>
-                    <hr>
-                    <ul class="small text-muted ps-3">
-                        <li class="mb-2">Pastikan <strong>Code NAPI</strong> sudah sesuai dengan format registrasi kantor.</li>
-                        <li class="mb-2">Gunakan <strong>HURUF KAPITAL</strong> untuk nama jika memungkinkan agar data terlihat seragam.</li>
-                        <li class="mb-2">Data yang disimpan akan langsung tersedia di database utama dan dapat dipanggil di menu <strong>Layanan Kagatau</strong>.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 
 <style>
-    /* Fokus efek pada input */
     .form-control:focus, .form-select:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);

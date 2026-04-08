@@ -9,25 +9,36 @@ class DataLayanan extends Model
 {
     use HasFactory;
 
-    // WAJIB: Beritahu Laravel kalau model ini pakai database 'kagatau'
-    protected $connection = 'mysql_layanan';
-
+    // Pastikan koneksi database-nya benar jika menggunakan multi-db
+    protected $connection = 'mysql_layanan'; 
     protected $table = 'data_layanan';
 
     protected $fillable = [
-    'tanggal_layanan',
-    'penitip_id',
-    'hubungan', // Tambahkan ini
-    'hp_manual',
-    'screenshot',
-    'dokumentasi',
-    'status'
-];
+        'tahanan_id',   // Pastikan ID Tahanan ada di sini
+        'penitip_id', 
+        'hubungan', 
+        'hp_manual', 
+        'tanggal_masuk', 
+        'tanggal_layanan', 
+        'status',
+        'screenshot',
+        'dokumentasi'
+    ];
 
-    // Relasi ke tabel Penitip (Database Utama)
+    /**
+     * Relasi ke Keluarga (Penitip) - Database Kagatau
+     */
     public function keluarga()
     {
-        // Walaupun beda database, Laravel bisa melakukan JOIN jika dalam 1 server MySQL
         return $this->belongsTo(Penitip::class, 'penitip_id');
+    }
+
+    /**
+     * RELASI BARU: Ke Tahanan - Database Sipirman
+     */
+    public function tahanan()
+    {
+        // Kita hubungkan ke Model Tahanan menggunakan foreign key 'tahanan_id'
+        return $this->belongsTo(Tahanan::class, 'tahanan_id');
     }
 }

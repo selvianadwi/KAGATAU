@@ -2,22 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DataLayanan;
-use App\Models\Penitip;
+use App\Models\DataLayanan; // Model di DB Kagatau
+use App\Models\Penitip;     // Model di DB Kagatau (Data Keluarga)
+use App\Models\Tahanan;     // Model di DB Sipirman (Data Tahanan)
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class LayananController extends Controller
 {
+    /**
+     * Menampilkan daftar antrean layanan
+     */
     public function index(Request $request)
     {
-        $query = DataLayanan::with('keluarga');
+        // Load relasi 'keluarga' (Penitip) dan 'tahanan'
+        $query = DataLayanan::with(['keluarga', 'tahanan']);
 
         if ($request->has('search')) {
             $search = $request->search;
             $query->whereHas('keluarga', function($q) use ($search) {
+                $q->where('nama', 'LIKE', "%{$search}%");
+            })->orWhereHas('tahanan', function($q) use ($search) {
                 $q->where('nama', 'LIKE', "%{$search}%")
-                  ->orWhere('nama_wbp', 'LIKE', "%{$search}%");
+                  ->orWhere('code_napi', 'LIKE', "%{$search}%");
             });
         }
 
@@ -25,85 +33,98 @@ class LayananController extends Controller
         return view('layanan.index', compact('layanans'));
     }
 
+    /**
+     * Menampilkan form input layanan baru
+     */
     public function create()
     {
+        // Ambil data Tahanan dari DB Sipirman
+        $tahanans = Tahanan::orderBy('nama', 'asc')->get();
+        
+        // Ambil data Keluarga dari DB Kagatau
         $keluargas = Penitip::orderBy('nama', 'asc')->get();
-        return view('layanan.create', compact('keluargas'));
+        
+        return view('layanan.create', compact('tahanans', 'keluargas'));
     }
 
+    /**
+     * Menyimpan data layanan ke database
+     */
     public function store(Request $request)
-{
-    $request->validate([
-        'tanggal_layanan' => 'required|date',
-        'penitip_id'      => 'required',
-        'hubungan'        => 'nullable', // <--- Ganti jadi nullable biar nggak error kalau kosong
-        'hp_manual'       => 'nullable|numeric',
-    ]);
+    {
+        $request->validate([
+            'tahanan_id' => 'required',
+            'penitip_id' => 'required',
+            'hubungan'   => 'required',
+            'hp_manual'  => 'nullable|numeric',
+        ]);
 
-    DataLayanan::create([
-        'tanggal_layanan' => $request->tanggal_layanan,
-        'penitip_id'      => $request->penitip_id,
-        'hubungan'        => $request->hubungan, 
-        'hp_manual'       => $request->hp_manual,
-        'status'          => 'pending',
-    ]);
+        // Cari data Tahanan di DB Sipirman untuk mengambil tanggal_masuk
+        $tahanan = Tahanan::findOrFail($request->tahanan_id);
 
-    return redirect()->route('layanan.index')->with('success', 'Data layanan berhasil ditambahkan!');
-}
+        DataLayanan::create([
+            'tahanan_id'      => $request->tahanan_id,
+            'penitip_id'      => $request->penitip_id,
+            'hubungan'        => $request->hubungan,
+            'hp_manual'       => $request->hp_manual,
+            'tanggal_masuk'   => $tahanan->tanggal_masuk, // Otomatis ambil dari kolom baru di tabel tahanan
+            'tanggal_layanan' => null,                   // NULL sampai tombol 'Layani' dipencet
+            'status'          => 'pending',
+        ]);
 
-    // --- FUNCTION EDIT YANG TADI HILANG ---
+        return redirect()->route('layanan.index')->with('success', 'Antrean layanan berhasil ditambahkan!');
+    }
+
+    /**
+     * Menampilkan form edit (biasanya untuk update foto dokumentasi)
+     */
     public function edit($id)
     {
         $layanan = DataLayanan::findOrFail($id);
+        $tahanans = Tahanan::orderBy('nama', 'asc')->get();
         $keluargas = Penitip::orderBy('nama', 'asc')->get();
         
-        return view('layanan.edit', compact('layanan', 'keluargas'));
+        return view('layanan.edit', compact('layanan', 'tahanans', 'keluargas'));
     }
 
-   public function update(Request $request, $id)
-{
-    // 1. Validasi HANYA untuk file foto
-    $request->validate([
-        'screenshot'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Maksimal 2MB
-        'dokumentasi' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Maksimal 2MB
-    ]);
+    /**
+     * Memperbarui dokumentasi layanan (Screenshot & Foto)
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'screenshot'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'dokumentasi' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
 
-    $layanan = DataLayanan::findOrFail($id);
-    $data = []; // Buat array kosong untuk menampung path foto baru
+        $layanan = DataLayanan::findOrFail($id);
+        $updateData = [];
 
-    // 2. Proses Upload Screenshot (Bukti WA)
-    if ($request->hasFile('screenshot')) {
-        // Hapus foto lama dari server jika ada
-        if ($layanan->screenshot) {
-            Storage::disk('public')->delete($layanan->screenshot);
+        if ($request->hasFile('screenshot')) {
+            if ($layanan->screenshot) Storage::disk('public')->delete($layanan->screenshot);
+            $updateData['screenshot'] = $request->file('screenshot')->store('layanan/screenshot', 'public');
         }
-        // Simpan foto baru ke folder 'public/layanan/screenshot'
-        $data['screenshot'] = $request->file('screenshot')->store('layanan/screenshot', 'public');
-    }
 
-    // 3. Proses Upload Dokumentasi (Foto Layanan)
-    if ($request->hasFile('dokumentasi')) {
-        // Hapus foto lama dari server jika ada
-        if ($layanan->dokumentasi) {
-            Storage::disk('public')->delete($layanan->dokumentasi);
+        if ($request->hasFile('dokumentasi')) {
+            if ($layanan->dokumentasi) Storage::disk('public')->delete($layanan->dokumentasi);
+            $updateData['dokumentasi'] = $request->file('dokumentasi')->store('layanan/dokumentasi', 'public');
         }
-        // Simpan foto baru ke folder 'public/layanan/dokumentasi'
-        $data['dokumentasi'] = $request->file('dokumentasi')->store('layanan/dokumentasi', 'public');
+
+        if (!empty($updateData)) {
+            $layanan->update($updateData);
+            return redirect()->route('layanan.index')->with('success', 'Dokumentasi berhasil diperbarui!');
+        }
+
+        return redirect()->route('layanan.index')->with('info', 'Tidak ada file yang diunggah.');
     }
 
-    // 4. Update data HANYA jika ada foto baru yang diunggah
-    if (!empty($data)) {
-        $layanan->update($data);
-        return redirect()->route('layanan.index')->with('success', 'Dokumentasi layanan berhasil diperbarui!');
-    }
-
-    return redirect()->route('layanan.index')->with('info', 'Tidak ada perubahan data (tidak ada foto yang diunggah).');
-}
+    /**
+     * Menghapus data layanan
+     */
     public function destroy($id)
     {
         $layanan = DataLayanan::findOrFail($id);
         
-        // Hapus file fisik jika ada sebelum hapus data di DB
         if ($layanan->screenshot) Storage::disk('public')->delete($layanan->screenshot);
         if ($layanan->dokumentasi) Storage::disk('public')->delete($layanan->dokumentasi);
         
@@ -112,16 +133,19 @@ class LayananController extends Controller
         return redirect()->back()->with('success', 'Data layanan berhasil dihapus!');
     }
 
+    /**
+     * Fungsi utama untuk memproses layanan (Tombol WA)
+     */
     public function layani($id)
-{
-    $layanan = DataLayanan::findOrFail($id);
-    
-    // Update status menjadi terlayani
-    $layanan->update([
-        'status' => 'dilayani' // sesuaikan dengan ENUM di database kamu ('pending', 'dilayani')
-    ]);
+    {
+        $layanan = DataLayanan::findOrFail($id);
+        
+        // Update status menjadi dilayani dan isi tanggal layanan otomatis jam sekarang
+        $layanan->update([
+            'status'          => 'dilayani',
+            'tanggal_layanan' => Carbon::now() // Mengisi waktu presisi saat dilayani
+        ]);
 
-    return redirect()->back()->with('success', 'Status berhasil diperbarui!');
-}
-    
+        return redirect()->back()->with('success', 'Status layanan diperbarui menjadi Terlayani!');
+    }
 }

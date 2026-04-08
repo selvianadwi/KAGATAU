@@ -15,5 +15,5 @@ class Tahanan extends Model
     
     public $timestamps = false;
 
-    protected $fillable = ['code_napi', 'nama', 'nama_ayah', 'jenis_kelamin'];
+    protected $fillable = ['code_napi', 'nama', 'nama_ayah', 'jenis_kelamin', 'tanggal_masuk'];
 }
