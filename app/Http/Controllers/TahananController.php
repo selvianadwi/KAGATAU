@@ -40,16 +40,16 @@ class TahananController extends Controller
         ]);
 
         Tahanan::create([
-            'code_napi'     => $request->code_napi,
-            'nama'          => strtoupper($request->nama),
-            'nama_ayah'     => strtoupper($request->nama_ayah),
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'perkara'       => $request->perkara,
-        ]);
+        'code_napi'     => $request->code_napi,
+        'nama'          => strtoupper($request->nama),
+        'nama_ayah'     => strtoupper($request->nama_ayah),
+        'jenis_kelamin' => $request->jenis_kelamin,
+        'tanggal_masuk' => $request->tanggal_masuk, // Pastikan ini ada
+    ]);
 
-        return redirect()->route('tahanan.index')->with('success', 'Data tahanan berhasil ditambahkan!');
-    }
-
+    // Kembalikan ke halaman sebelumnya (create layanan)
+    return redirect()->back()->with('success', 'Data Tahanan Berhasil Ditambahkan!');
+}
     public function edit($id)
     {
         $tahanan = Tahanan::findOrFail($id);

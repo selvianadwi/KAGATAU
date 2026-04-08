@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataLayanan; // Model di DB Kagatau
-use App\Models\Penitip;     // Model di DB Kagatau (Data Keluarga)
+use App\Models\Penitip;     // Model di DB Sipirman (Data Keluarga)
 use App\Models\Tahanan;     // Model di DB Sipirman (Data Tahanan)
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,16 +16,24 @@ class LayananController extends Controller
      */
     public function index(Request $request)
     {
-        // Load relasi 'keluarga' (Penitip) dan 'tahanan'
+        // Load relasi 'keluarga' dan 'tahanan'
         $query = DataLayanan::with(['keluarga', 'tahanan']);
 
-        if ($request->has('search')) {
+        // Logika Pencarian Lintas Database (Fix: penitip di sipirman)
+        if ($request->has('search') && $request->search != '') {
             $search = $request->search;
-            $query->whereHas('keluarga', function($q) use ($search) {
-                $q->where('nama', 'LIKE', "%{$search}%");
-            })->orWhereHas('tahanan', function($q) use ($search) {
-                $q->where('nama', 'LIKE', "%{$search}%")
-                  ->orWhere('code_napi', 'LIKE', "%{$search}%");
+
+            $query->where(function($q) use ($search) {
+                // Cari berdasarkan Nama Keluarga (DB Sipirman)
+                $q->whereHas('keluarga', function($sub) use ($search) {
+                    $sub->from('sipirman.penitip')->where('nama', 'LIKE', "%{$search}%");
+                })
+                // Atau Cari berdasarkan Nama Tahanan/Code Napi (DB Sipirman)
+                ->orWhereHas('tahanan', function($sub) use ($search) {
+                    $sub->from('sipirman.tahanan')
+                        ->where('nama', 'LIKE', "%{$search}%")
+                        ->orWhere('code_napi', 'LIKE', "%{$search}%");
+                });
             });
         }
 
@@ -41,7 +49,7 @@ class LayananController extends Controller
         // Ambil data Tahanan dari DB Sipirman
         $tahanans = Tahanan::orderBy('nama', 'asc')->get();
         
-        // Ambil data Keluarga dari DB Kagatau
+        // Ambil data Keluarga dari DB Sipirman
         $keluargas = Penitip::orderBy('nama', 'asc')->get();
         
         return view('layanan.create', compact('tahanans', 'keluargas'));
@@ -51,32 +59,34 @@ class LayananController extends Controller
      * Menyimpan data layanan ke database
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'tahanan_id' => 'required',
-            'penitip_id' => 'required',
-            'hubungan'   => 'required',
-            'hp_manual'  => 'nullable|numeric',
-        ]);
+{
+    $request->validate([
+        // Hapus 'mysql.' atau 'sipirman.' cukup nama tabelnya saja karena ini koneksi utama
+        'tahanan_id' => 'required|exists:tahanan,id', 
+        'penitip_id' => 'required|exists:penitip,id',
+        'hubungan'   => 'required',
+        'hp_manual'  => 'nullable|numeric',
+    ]);
 
-        // Cari data Tahanan di DB Sipirman untuk mengambil tanggal_masuk
-        $tahanan = Tahanan::findOrFail($request->tahanan_id);
+    // Ambil data tahanan
+    $tahanan = \App\Models\Tahanan::findOrFail($request->tahanan_id);
 
-        DataLayanan::create([
-            'tahanan_id'      => $request->tahanan_id,
-            'penitip_id'      => $request->penitip_id,
-            'hubungan'        => $request->hubungan,
-            'hp_manual'       => $request->hp_manual,
-            'tanggal_masuk'   => $tahanan->tanggal_masuk, // Otomatis ambil dari kolom baru di tabel tahanan
-            'tanggal_layanan' => null,                   // NULL sampai tombol 'Layani' dipencet
-            'status'          => 'pending',
-        ]);
+    // Simpan ke DB Kagatau (Koneksi: mysql_layanan)
+    \App\Models\DataLayanan::create([
+        'tahanan_id'      => $request->tahanan_id,
+        'penitip_id'      => $request->penitip_id,
+        'hubungan'        => $request->hubungan,
+        'hp_manual'       => $request->hp_manual,
+        'tanggal_masuk'   => $tahanan->tanggal_masuk,
+        'status'          => 'pending',
+        'tanggal_layanan' => null,
+    ]);
 
-        return redirect()->route('layanan.index')->with('success', 'Antrean layanan berhasil ditambahkan!');
-    }
+    return redirect()->route('layanan.index')->with('success', 'Antrean berhasil didaftarkan!');
+}
 
     /**
-     * Menampilkan form edit (biasanya untuk update foto dokumentasi)
+     * Menampilkan form edit dokumentasi
      */
     public function edit($id)
     {
@@ -90,34 +100,7 @@ class LayananController extends Controller
     /**
      * Memperbarui dokumentasi layanan (Screenshot & Foto)
      */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'screenshot'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'dokumentasi' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
-
-        $layanan = DataLayanan::findOrFail($id);
-        $updateData = [];
-
-        if ($request->hasFile('screenshot')) {
-            if ($layanan->screenshot) Storage::disk('public')->delete($layanan->screenshot);
-            $updateData['screenshot'] = $request->file('screenshot')->store('layanan/screenshot', 'public');
-        }
-
-        if ($request->hasFile('dokumentasi')) {
-            if ($layanan->dokumentasi) Storage::disk('public')->delete($layanan->dokumentasi);
-            $updateData['dokumentasi'] = $request->file('dokumentasi')->store('layanan/dokumentasi', 'public');
-        }
-
-        if (!empty($updateData)) {
-            $layanan->update($updateData);
-            return redirect()->route('layanan.index')->with('success', 'Dokumentasi berhasil diperbarui!');
-        }
-
-        return redirect()->route('layanan.index')->with('info', 'Tidak ada file yang diunggah.');
-    }
-
+    
     /**
      * Menghapus data layanan
      */
@@ -134,18 +117,62 @@ class LayananController extends Controller
     }
 
     /**
-     * Fungsi utama untuk memproses layanan (Tombol WA)
+     * Memproses layanan
      */
     public function layani($id)
     {
         $layanan = DataLayanan::findOrFail($id);
         
-        // Update status menjadi dilayani dan isi tanggal layanan otomatis jam sekarang
         $layanan->update([
             'status'          => 'dilayani',
-            'tanggal_layanan' => Carbon::now() // Mengisi waktu presisi saat dilayani
+            'tanggal_layanan' => Carbon::now() 
         ]);
 
         return redirect()->back()->with('success', 'Status layanan diperbarui menjadi Terlayani!');
+    }
+    /**
+     * Fitur Edit Data Baru (edit2)
+     */
+    public function edit2($id)
+    {
+        $layanan = DataLayanan::findOrFail($id);
+        
+        // Ambil data untuk dropdown relasi
+        $tahanans = Tahanan::orderBy('nama', 'asc')->get();
+        $keluargas = Penitip::orderBy('nama', 'asc')->get();
+        
+        return view('layanan.edit2', compact('layanan', 'tahanans', 'keluargas'));
+    }
+
+    /**
+     * Fungsi Update (Bisa dipakai oleh edit.blade maupun edit2.blade)
+     */
+    public function update(Request $request, $id)
+    {
+        $layanan = DataLayanan::findOrFail($id);
+        
+        // Gabungkan semua input (baik teks maupun file)
+        $updateData = $request->all();
+
+        // 1. Logic Sinkron Tanggal Masuk (Jika Tahanan Diganti di edit2)
+        if ($request->tahanan_id && $layanan->tahanan_id != $request->tahanan_id) {
+            $tahanan = Tahanan::find($request->tahanan_id);
+            $updateData['tanggal_masuk'] = $tahanan->tanggal_masuk;
+        }
+
+        // 2. Logic Upload Foto (Jika ada file di edit/edit2)
+        if ($request->hasFile('screenshot')) {
+            if ($layanan->screenshot) Storage::disk('public')->delete($layanan->screenshot);
+            $updateData['screenshot'] = $request->file('screenshot')->store('layanan/screenshot', 'public');
+        }
+
+        if ($request->hasFile('dokumentasi')) {
+            if ($layanan->dokumentasi) Storage::disk('public')->delete($layanan->dokumentasi);
+            $updateData['dokumentasi'] = $request->file('dokumentasi')->store('layanan/dokumentasi', 'public');
+        }
+
+        $layanan->update($updateData);
+
+        return redirect()->route('layanan.index')->with('success', 'Data antrean berhasil diperbarui!');
     }
 }

@@ -37,3 +37,4 @@ Route::get('layanan/{id}/layani', [LayananController::class, 'layani'])->name('l
 Route::resource('layanan', LayananController::class);
 Route::get('layanan/{id}/layani', [App\Http\Controllers\LayananController::class, 'layani'])->name('layanan.layani');
 Route::resource('layanan', App\Http\Controllers\LayananController::class);
+Route::get('/layanan/{id}/edit-data', [LayananController::class, 'edit2'])->name('layanan.edit2');

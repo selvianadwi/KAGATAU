@@ -34,30 +34,44 @@ class PenitipController extends Controller
     {
         $request->validate([
             'nama'     => 'required|string|max:255',
-            'nik'      => 'required|numeric|digits:16|unique:penitip,nik',
-            'hp'       => 'required|numeric|digits_between:10,15', // Validasi kolom hp
-            'nama_wbp' => 'required',
-            'foto'     => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'foto_ktp' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            // NIK jadi nullable, tetap dicek unik kalau diisi
+            'nik'      => 'nullable|numeric|digits:16|unique:penitip,nik',
+            'hp'       => 'required|numeric|digits_between:10,15',
+            // Foto diri & KTP jadi nullable
+            'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_ktp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $namaFoto = time() . '_' . $request->file('foto')->getClientOriginalName();
-        $request->file('foto')->storeAs('foto_diri', $namaFoto, 'public');
+        // Handle Foto Diri
+        $namaFoto = null;
+        if ($request->hasFile('foto')) {
+            $namaFoto = time() . '_' . $request->file('foto')->getClientOriginalName();
+            $request->file('foto')->storeAs('foto_diri', $namaFoto, 'public');
+        }
 
-        $namaKtp = time() . '_ktp_' . $request->file('foto_ktp')->getClientOriginalName();
-        $request->file('foto_ktp')->storeAs('foto_ktp', $namaKtp, 'public');
+        // Handle Foto KTP
+        $namaKtp = null;
+        if ($request->hasFile('foto_ktp')) {
+            $namaKtp = time() . '_ktp_' . $request->file('foto_ktp')->getClientOriginalName();
+            $request->file('foto_ktp')->storeAs('foto_ktp', $namaKtp, 'public');
+        }
 
         Penitip::create([
-            'nama'     => $request->nama,
-            'nik'      => $request->nik,
-            'nama_wbp' => $request->nama_wbp,
-            'hp'       => $request->hp, // Simpan ke kolom hp
-            'foto'     => $namaFoto,
-            'foto_ktp' => $namaKtp,
+            'nama'             => strtoupper($request->nama),
+            'nik'              => $request->nik, // Akan otomatis null jika kosong
+            'hp'               => $request->hp,
+            'nama_wbp'         => '-',
+            'kode_tahanan'     => '-',
+            'foto'             => $namaFoto,
+            'foto_ktp'         => $namaKtp,
             'jadwal_kunjungan' => now()->toDateString(),
         ]);
 
-        return redirect()->route('penitip.index')->with('success', 'Data penitip berhasil ditambahkan!');
+        if ($request->header('referer') == route('layanan.create')) {
+            return redirect()->back()->with('success', 'Keluarga berhasil ditambahkan!');
+        }
+
+        return redirect()->route('penitip.index')->with('success', 'Data keluarga berhasil ditambahkan!');
     }
 
     public function edit($id)
@@ -72,32 +86,45 @@ class PenitipController extends Controller
 
         $request->validate([
             'nama'     => 'required|string|max:255',
-            'nik'      => 'required|numeric|digits:16|unique:penitip,nik,' . $id,
+            'nik'      => 'nullable|numeric|digits:16|unique:penitip,nik,' . $id,
             'hp'       => 'required|numeric|digits_between:10,15',
             'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'foto_ktp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $penitip->nama = $request->nama;
+        // Update data teks
+        $penitip->nama = strtoupper($request->nama);
         $penitip->nik  = $request->nik;
-        $penitip->hp   = $request->hp; // Update kolom hp
+        $penitip->hp   = $request->hp;
 
+        // Handle Update Foto Diri
         if ($request->hasFile('foto')) {
-            if ($penitip->foto) Storage::disk('public')->delete('foto_diri/' . $penitip->foto);
+            // Hapus foto lama jika ada
+            if ($penitip->foto) {
+                Storage::disk('public')->delete('foto_diri/' . $penitip->foto);
+            }
+            // Simpan foto baru
             $namaFoto = time() . '_' . $request->file('foto')->getClientOriginalName();
             $request->file('foto')->storeAs('foto_diri', $namaFoto, 'public');
-            $penitip->foto = $namaFoto;
+            $penitip->foto = $namaFoto; // Masukkan ke objek model
         }
 
+        // Handle Update Foto KTP
         if ($request->hasFile('foto_ktp')) {
-            if ($penitip->foto_ktp) Storage::disk('public')->delete('foto_ktp/' . $penitip->foto_ktp);
+            // Hapus KTP lama jika ada
+            if ($penitip->foto_ktp) {
+                Storage::disk('public')->delete('foto_ktp/' . $penitip->foto_ktp);
+            }
+            // Simpan KTP baru
             $namaKtp = time() . '_ktp_' . $request->file('foto_ktp')->getClientOriginalName();
             $request->file('foto_ktp')->storeAs('foto_ktp', $namaKtp, 'public');
-            $penitip->foto_ktp = $namaKtp;
+            $penitip->foto_ktp = $namaKtp; // Masukkan ke objek model
         }
 
+        // SIMPAN PERUBAHAN KE DATABASE
         $penitip->save();
-        return redirect()->route('penitip.index')->with('success', 'Data penitip berhasil diperbarui!');
+
+        return redirect()->route('penitip.index')->with('success', 'Data keluarga berhasil diperbarui!');
     }
 
     public function destroy($id)
