@@ -63,7 +63,20 @@ return [
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
-
+        // Koneksi Kedua: Mengarah ke database kagatau (Data Pelayanan)
+        'mysql_kagatau' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE_KAGATAU', 'kagatau'), // Database kedua
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
         // Tambahkan blok ini:
         'mysql_layanan' => [
             'driver' => 'mysql',
