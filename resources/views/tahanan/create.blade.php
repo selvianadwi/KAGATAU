@@ -5,7 +5,7 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="mb-4 mt-4">
-        <h4 class="fw-bold text-dark"><i class="bi bi-person-plus-fill me-2"></i>Tambah Tahanan</h4>
+        <h4 class="fw-bold text-dark"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Tambah Tahanan</h4>
         <p class="text-muted">Input data warga binaan baru ke dalam sistem database <strong>Sipirman</strong>.</p>
     </div>
 
@@ -18,28 +18,29 @@
                 <div class="card-body p-4">
                     <form action="{{ route('tahanan.store') }}" method="POST" autocomplete="off">
                         @csrf
+                        {{-- TANDA KHUSUS: Agar Controller tahu ini dari halaman create, bukan Modal --}}
+                        <input type="hidden" name="asal_input" value="halaman_tahanan">
                         
                         <div class="row">
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-bold text-secondary small text-uppercase">Code NAPI / Tahanan</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-hash"></i></span>
-                                    {{-- Tambahkan maxlength="10" di sini --}}
-                                    <input type="text" name="code_napi" id="code_napi" 
-                                           class="form-control border-start-0 @error('code_napi') is-invalid @enderror" 
-                                           value="{{ old('code_napi') }}" 
-                                           placeholder="Masukan code sesuai berkas" 
-                                           maxlength="10"
-                                           oninput="if (this.value.length > 10) this.value = this.value.slice(0, 10);">
-                                    @error('code_napi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-cpu-fill"></i></span>
+                                    {{-- MODIFIKASI: Input dibuat Readonly dan visualnya dibuat berbeda --}}
+                                    <input type="text" 
+                                           class="form-control border-start-0 bg-light fw-bold text-primary" 
+                                           value="OTOMATIS (8 DIGIT)" 
+                                           readonly 
+                                           tabindex="-1">
                                 </div>
+                                <div class="form-text small text-info"><i class="bi bi-info-circle me-1"></i>Kode unik akan digenerate otomatis oleh sistem.</div>
                             </div>
 
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-bold text-secondary small text-uppercase">Jenis Kelamin</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-gender-ambiguous"></i></span>
-                                    <select name="jenis_kelamin" class="form-select border-start-0 @error('jenis_kelamin') is-invalid @enderror">
+                                    <select name="jenis_kelamin" class="form-select border-start-0 @error('jenis_kelamin') is-invalid @enderror" required>
                                         <option value="">-- Pilih --</option>
                                         <option value="Pria" {{ old('jenis_kelamin') == 'Pria' ? 'selected' : '' }}>Pria</option>
                                         <option value="Wanita" {{ old('jenis_kelamin') == 'Wanita' ? 'selected' : '' }}>Wanita</option>
@@ -55,23 +56,33 @@
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-badge"></i></span>
                                     <input type="text" name="nama" class="form-control border-start-0 @error('nama') is-invalid @enderror" 
-                                           value="{{ old('nama') }}" placeholder="Masukkan nama sesuai berkas">
+                                           value="{{ old('nama') }}" placeholder="Masukkan nama sesuai berkas" required>
                                     @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-12 mb-4">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Nama Ayah </label>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold text-secondary small text-uppercase">Nama Ayah</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-people"></i></span>
                                     <input type="text" name="nama_ayah" class="form-control border-start-0 @error('nama_ayah') is-invalid @enderror" 
-                                           value="{{ old('nama_ayah') }}" placeholder="Nama ayah">
+                                           value="{{ old('nama_ayah') }}" placeholder="Nama ayah" required>
                                     @error('nama_ayah') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold text-secondary small text-uppercase">Tanggal Masuk</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-calendar-event"></i></span>
+                                    <input type="date" name="tanggal_masuk" class="form-control border-start-0 @error('tanggal_masuk') is-invalid @enderror" 
+                                           value="{{ old('tanggal_masuk', date('Y-m-d')) }}" required>
+                                    @error('tanggal_masuk') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                            </div>
                         </div>
+
 
                         <div class="mt-2 pt-4 border-top d-flex justify-content-between align-items-center">
                             <a href="{{ route('tahanan.index') }}" class="btn btn-outline-secondary px-4 shadow-sm">
@@ -85,8 +96,6 @@
                 </div>
             </div>
         </div>
-        
-
     </div>
 </div>
 
@@ -97,6 +106,11 @@
     }
     .input-group-text {
         color: #6c757d;
+    }
+    /* Style khusus untuk input readonly agar terlihat jelas bedanya */
+    input[readonly] {
+        cursor: not-allowed;
+        letter-spacing: 1px;
     }
 </style>
 @endsection

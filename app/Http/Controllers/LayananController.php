@@ -14,33 +14,44 @@ class LayananController extends Controller
     /**
      * Menampilkan daftar antrean layanan
      */
-    public function index(Request $request)
-    {
-        // Load relasi 'keluarga' dan 'tahanan'
-        $query = DataLayanan::with(['keluarga', 'tahanan']);
+public function index(Request $request)
+{
+    $search = $request->query('search');
+    $dari = $request->query('dari');
+    $sampai = $request->query('sampai');
+    $status = $request->query('status'); // Ambil input status
 
-        // Logika Pencarian Lintas Database (Fix: penitip di sipirman)
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
+    $dbSipirman = "sipirman"; 
 
-            $query->where(function($q) use ($search) {
-                // Cari berdasarkan Nama Keluarga (DB Sipirman)
-                $q->whereHas('keluarga', function($sub) use ($search) {
-                    $sub->from('sipirman.penitip')->where('nama', 'LIKE', "%{$search}%");
+    $layanans = DataLayanan::with(['tahanan', 'keluarga'])
+        ->when($search, function ($query, $search) use ($dbSipirman) {
+            return $query->where(function ($q) use ($search, $dbSipirman) {
+                $q->whereHas('tahanan', function ($queryT) use ($search, $dbSipirman) {
+                    $queryT->from($dbSipirman . '.tahanan')
+                           ->where('nama', 'like', "%{$search}%");
                 })
-                // Atau Cari berdasarkan Nama Tahanan/Code Napi (DB Sipirman)
-                ->orWhereHas('tahanan', function($sub) use ($search) {
-                    $sub->from('sipirman.tahanan')
-                        ->where('nama', 'LIKE', "%{$search}%")
-                        ->orWhere('code_napi', 'LIKE', "%{$search}%");
+                ->orWhereHas('keluarga', function ($queryK) use ($search, $dbSipirman) {
+                    $queryK->from($dbSipirman . '.penitip')
+                           ->where('nama', 'like', "%{$search}%");
                 });
             });
-        }
+        })
+        ->when($dari, function ($query, $dari) {
+            return $query->whereDate('tanggal_layanan', '>=', $dari);
+        })
+        ->when($sampai, function ($query, $sampai) {
+            return $query->whereDate('tanggal_layanan', '<=', $sampai);
+        })
+        // FILTER STATUS
+        ->when($status, function ($query, $status) {
+            return $query->where('status', $status);
+        })
+        ->orderBy('id', 'desc')
+        ->paginate(20)
+        ->withQueryString();
 
-        $layanans = $query->latest()->paginate(10);
-        return view('layanan.index', compact('layanans'));
-    }
-
+    return view('layanan.index', compact('layanans'));
+}
     /**
      * Menampilkan form input layanan baru
      */

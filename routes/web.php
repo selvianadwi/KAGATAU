@@ -38,10 +38,8 @@ Route::get('layanan/{id}/layani', [LayananController::class, 'layani'])->name('l
 Route::resource('layanan', LayananController::class);
 Route::get('layanan/{id}/layani', [App\Http\Controllers\LayananController::class, 'layani'])->name('layanan.layani');
 Route::resource('layanan', App\Http\Controllers\LayananController::class);
-<<<<<<< HEAD
+
 Route::get('/layanan/{id}/edit-data', [LayananController::class, 'edit2'])->name('layanan.edit2');
-=======
 
 Route::get('/buku-telepon', [BukuTeleponController::class, 'index'])->name('bukutelepon.index');
 Route::delete('/buku-telepon/{id}', [BukuTeleponController::class, 'destroy'])->name('bukuTelepon.destroy');
->>>>>>> 1a2aba5c0d58244073adf24ad376bb4521abc444

@@ -120,7 +120,7 @@
         </div>
     </div>
 
-    {{-- MODAL TAMBAH TAHANAN --}}
+    {{-- MODAL TAMBAH TAHANAN (DIUBAH KE AUTO GENERATE CODE) --}}
     <div class="modal fade" id="modalTambahTahanan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -133,7 +133,10 @@
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-secondary text-uppercase">Code NAPI / Tahanan</label>
-                            <input type="text" name="code_napi" class="form-control" required placeholder="Masukan code sesuai berkas" maxlength="10">
+                            {{-- MODIFIKASI: Jadi Readonly karena di-generate di Controller --}}
+                            <input type="text" class="form-control bg-light fw-bold text-primary" 
+                                   value="OTOMATIS (8 DIGIT UNIK)" readonly>
+                            <div class="form-text small text-info">Sistem akan membuatkan kode unik setelah disimpan.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-secondary text-uppercase">Nama Lengkap Tahanan</label>
@@ -150,7 +153,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label small fw-bold text-secondary text-uppercase">Tanggal Masuk</label>
-                                <input type="date" name="tanggal_masuk" class="form-control" required>
+                                <input type="date" name="tanggal_masuk" class="form-control" required value="{{ date('Y-m-d') }}">
                             </div>
                         </div>
                         <div class="mb-0">
