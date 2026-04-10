@@ -41,5 +41,6 @@ Route::resource('layanan', App\Http\Controllers\LayananController::class);
 
 Route::get('/layanan/{id}/edit-data', [LayananController::class, 'edit2'])->name('layanan.edit2');
 
-Route::get('/buku-telepon', [BukuTeleponController::class, 'index'])->name('bukutelepon.index');
+Route::get('/buku-telepon', [BukuTeleponController::class, 'index'])->name('buku-telepon.index');
 Route::delete('/buku-telepon/{id}', [BukuTeleponController::class, 'destroy'])->name('bukuTelepon.destroy');
+Route::delete('/buku-telepon/{id}', [BukuTeleponController::class, 'destroy'])->name('buku-telepon.destroy');

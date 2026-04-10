@@ -5,7 +5,7 @@
     <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
             <div>
-                <h4 class="fw-bold mb-0 text-dark">Daftar Antrean Layanan</h4>
+                <h4 class="fw-bold mb-0 text-dark">Daftar Layanan</h4>
                 <p class="text-muted small mb-0">Manajemen data layanan KAGATAU (Database: Kagatau & Sipirman)</p>
             </div>
             <a href="{{ route('layanan.create') }}" class="btn btn-primary shadow-sm px-3">
@@ -90,22 +90,27 @@
                         <tbody>
                             @forelse($layanans as $l)
                                 @php
-                                    // 1. Ambil Identitas
+                                    // 1. Ambil Identitas & Variabel untuk Tabel
                                     $namaT = $l->tahanan->nama ?? 'N/A';
                                     $codeNapi = $l->tahanan->code_napi ?? '-';
                                     $namaK = $l->keluarga->nama ?? 'N/A';
                                     $nomorTarget = $l->hp_manual ?? ($l->keluarga->hp ?? '-');
+
+                                    // Variabel Baru: Tanggal Masuk dari tabel tahanan
+                                    $tglMasukRaw = $l->tahanan->tanggal_masuk ?? null;
+                                    $tglMasukFormatted = $tglMasukRaw ? \Carbon\Carbon::parse($tglMasukRaw)->format('d/m/Y') : '-';
                                     
-                                    // 2. Logic Pesan WhatsApp (DIPERBAIKI)
+                                    // 2. Logic Pesan WhatsApp
                                     $jsonPath = storage_path('app/wa_settings.json');
                                     $waSettings = file_exists($jsonPath) ? json_decode(file_get_contents($jsonPath), true) : [];
                                     
-                                    // Backup pesan jika JSON tidak ada
-                                    $msgTemplate = $waSettings['wa_template'] ?? "Halo Bapak/Ibu [nama_keluarga], kami dari Rutan Rembang menginfokan bahwa tahanan atas nama [nama_tahanan] telah tiba di Rutan.";
+                                    // Template Pesan (Default jika JSON kosong)
+                                    $msgTemplate = $waSettings['wa_template'] ?? "Halo Bapak/Ibu [nama_keluarga], kami dari Rutan Rembang menginfokan bahwa tahanan atas nama [nama_tahanan] telah tiba di Rutan pada tanggal [tanggal_masuk].";
 
+                                    // Replace Variabel [nama_keluarga], [nama_tahanan], dan variabel baru [tanggal_masuk]
                                     $pesanFinal = str_replace(
-                                        ['[nama_keluarga]', '[nama_tahanan]'],
-                                        [strtoupper($namaK), strtoupper($namaT)],
+                                        ['[nama_keluarga]', '[nama_tahanan]', '[tanggal_masuk]'],
+                                        [strtoupper($namaK), strtoupper($namaT), $tglMasukFormatted],
                                         $msgTemplate
                                     );
 
@@ -166,7 +171,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="11" class="text-center py-5 text-muted">Data antrean tidak ditemukan.</td></tr>
+                                <tr><td colspan="11" class="text-center py-5 text-muted">Data tidak ditemukan.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
