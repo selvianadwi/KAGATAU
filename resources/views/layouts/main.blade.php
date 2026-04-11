@@ -20,9 +20,9 @@
             height: 100vh;
             position: fixed;
             background: #1a252f;
-            /* Warna lebih deep & premium */
             color: white;
             box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
         }
 
         #main-content {
@@ -52,18 +52,21 @@
             padding: 12px 15px;
             font-weight: 500;
             transition: all 0.3s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
             display: flex;
             align-items: center;
+            text-decoration: none;
         }
 
-        /* Efek Hover Keren */
         .nav-link:hover {
             color: #fff;
             background: rgba(255, 255, 255, 0.08);
             transform: translateX(5px);
         }
 
-        /* Efek Active Modern */
         .nav-link.active {
             background: linear-gradient(45deg, #3498db, #2980b9) !important;
             color: white !important;
@@ -73,22 +76,24 @@
 
         .nav-link i {
             font-size: 1.1rem;
-            transition: 0.3s;
         }
 
-        .nav-link.active i {
-            transform: scale(1.1);
-            color: #fff;
+        .nav-link-logout:hover {
+            background: rgba(231, 76, 60, 0.2) !important;
+            color: #e74c3c !important;
         }
 
-        /* Scrollbar Sidebar */
-        #sidebar::-webkit-scrollbar {
-            width: 5px;
+        .sidebar-heading {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.3);
+            padding: 10px 20px 5px;
+            font-weight: 700;
         }
 
-        #sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        #sidebar::-webkit-scrollbar { width: 5px; }
+        #sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 
@@ -97,15 +102,14 @@
     <div id="sidebar" class="d-flex flex-column">
         <div class="logo-text text-center">
             <h4 class="mb-0">KAGATAU</h4>
-            <small class="text-info fw-bold" style="font-size: 9px; opacity: 0.8;">
-                RUTAN REMBANG
-            </small>
+            <small class="text-info fw-bold" style="font-size: 9px; opacity: 0.8;">RUTAN REMBANG</small>
         </div>
 
-        <div class="p-3">
+        <div class="p-2">
             <ul class="nav nav-pills flex-column mb-auto">
+                <div class="sidebar-heading">Menu Utama</div>
                 <li>
-                    <a href="/" class="nav-link {{ Request::is('/') ? 'active' : '' }}">
+                    <a href="{{ route('dashboard') }}" class="nav-link {{ Request::is('dashboard') ? 'active' : '' }}">
                         <i class="bi bi-grid-1x2-fill me-3"></i> Dashboard
                     </a>
                 </li>
@@ -125,17 +129,43 @@
                     </a>
                 </li>
                 <li>
-                    <a href="/buku-telepon" class="nav-link {{ request()->routeIs('bukutelepon.index') ? 'active' : '' }}">
+                    <a href="/buku-telepon" class="nav-link {{ Request::is('buku-telepon*') ? 'active' : '' }}">
                         <i class="bi bi-telephone-fill me-3"></i> Buku Telepon
+                    </a>
+                </li>
+
+                {{-- Khusus Admin --}}
+                @if(Auth::user()->role === 'admin')
+                <div class="sidebar-heading mt-3">Administrasi</div>
+                <li>
+                    <a href="{{ route('users.index') }}" class="nav-link {{ Request::is('users') ? 'active' : '' }}">
+                        <i class="bi bi-people-gear-fill me-3"></i> Manajemen Petugas
+                    </a>
+                </li>
+                @endif
+
+                <div class="sidebar-heading mt-3">Pengaturan</div>
+                <li>
+                    <a href="/setting" class="nav-link {{ Request::is('setting*') ? 'active' : '' }}">
+                        <i class="bi bi-gear-wide-connected me-3"></i> Setting WA
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ route('users.edit', Auth::id()) }}" class="nav-link {{ Request::is('users/*/edit') ? 'active' : '' }}">
+                        <i class="bi bi-person-circle me-3"></i> Profil Saya
                     </a>
                 </li>
 
                 <hr style="border-color: rgba(255,255,255,0.1)">
 
                 <li>
-                    <a href="/setting" class="nav-link {{ Request::is('setting*') ? 'active' : '' }}">
-                        <i class="bi bi-gear-wide-connected me-3"></i> Setting WA
-                    </a>
+                    <form action="{{ route('logout') }}" method="POST" id="logout-form">
+                        @csrf
+                        <button type="submit" class="nav-link nav-link-logout border-0" style="background:none;">
+                            <i class="bi bi-box-arrow-right me-3"></i> Keluar Sistem
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>
@@ -149,6 +179,20 @@
 
     <div id="main-content">
         <div class="container-fluid">
+            {{-- Alert Notifikasi --}}
+            @if(session('success'))
+                <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             @yield('content')
         </div>
     </div>
