@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tahanan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TahananController extends Controller
 {
@@ -11,15 +12,19 @@ class TahananController extends Controller
     {
         $search = $request->query('search');
 
-        // MENGGUNAKAN paginate() BUKAN get()
-        // withQueryString() berfungsi agar parameter ?search=... tetap ada di URL saat klik next page
         $tahanans = Tahanan::when($search, function ($query, $search) {
-            return $query->where('nama', 'like', "%{$search}%")
-                         ->orWhere('code_napi', 'like', "%{$search}%");
+            return $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('code_napi', 'like', "%{$search}%")
+                    // Pencarian gabungan Nama + Bin + Nama Ayah
+                    ->orWhere(DB::raw("CONCAT(nama, ' bin ', nama_ayah)"), 'like', "%{$search}%")
+                    // Pencarian gabungan Nama + Binti + Nama Ayah
+                    ->orWhere(DB::raw("CONCAT(nama, ' binti ', nama_ayah)"), 'like', "%{$search}%");
+            });
         })
-        ->orderBy('id', 'desc') 
-        ->paginate(20) // Ini kuncinya agar currentPage() di Blade bisa jalan
-        ->withQueryString(); 
+            ->orderBy('id', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         return view('tahanan.index', compact('tahanans'));
     }
@@ -31,10 +36,8 @@ class TahananController extends Controller
 
 public function store(Request $request)
 {
-    // 1. Generate Kode Unik 8 Digit
     $codeNapi = $this->generateUniqueCode();
 
-    // 2. Validasi (Hapus code_napi dari validasi required karena kita generate sendiri)
     $request->validate([
         'nama'          => 'required|string|max:255',
         'nama_ayah'     => 'required|string|max:255',
@@ -43,9 +46,8 @@ public function store(Request $request)
         'perkara'       => 'nullable|string',
     ]);
 
-    // 3. Simpan
     Tahanan::create([
-        'code_napi'     => $codeNapi, // Pakai hasil generate
+        'code_napi'     => $codeNapi,
         'nama'          => strtoupper($request->nama),
         'nama_ayah'     => strtoupper($request->nama_ayah),
         'jenis_kelamin' => $request->jenis_kelamin,
@@ -59,19 +61,14 @@ public function store(Request $request)
     return redirect()->back()->with('success', 'Tahanan berhasil ditambah! Kode: ' . $codeNapi);
 }
 
-/**
- * Fungsi Helper Generate Kode 8 Digit Unik
- */
 private function generateUniqueCode()
 {
     $exists = true;
     $code = '';
 
     while ($exists) {
-        // Generate 8 digit alfanumerik (Huruf Kapital & Angka)
         $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
         
-        // Cek di DB Sipirman apakah sudah ada
         $exists = Tahanan::where('code_napi', $code)->exists();
     }
 

@@ -10,20 +10,47 @@ class BukuTeleponController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
-        $dbSipirman = "sipirman"; // Sesuaikan dengan nama DB Sipirman Anda
+        $dbSipirman = "sipirman"; 
+        $dbLayanan = "kagatau";   
 
-        // 1. Ambil data Tahanan dari DB Sipirman (mysql)
         $tahanans = DB::connection('mysql')
             ->table('tahanan')
-            ->when($search, function($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('code_napi', 'like', "%{$search}%");
+            ->select('id', 'nama', 'code_napi', 'nama_ayah', 'jenis_kelamin')
+            ->when($search, function ($q) use ($search, $dbLayanan) {
+                $q->where(function ($sub) use ($search, $dbLayanan) {
+                $sub->where(DB::raw("CONCAT(nama, ' bin ', nama_ayah)"), 'like', "%{$search}%")
+                    ->orWhere(DB::raw("CONCAT(nama, ' binti ', nama_ayah)"), 'like', "%{$search}%")
+                    ->orWhere('nama', 'like', "%{$search}%")
+                    ->orWhere('code_napi', 'like', "%{$search}%");
+
+                    $sub->orWhereExists(function ($query) use ($search) {
+                        $query->select(DB::raw(1))
+                            ->from('penitip')
+                            ->whereColumn('penitip.kode_tahanan', 'tahanan.code_napi')
+                            ->where('penitip.nama', 'like', "%{$search}%");
+                    });
+
+                    $sub->orWhereExists(function ($query) use ($search, $dbLayanan) {
+                        $query->select(DB::raw(1))
+                            ->from($dbLayanan . '.data_layanan')
+                            ->join('penitip', $dbLayanan . '.data_layanan.penitip_id', '=', 'penitip.id')
+                            ->whereColumn($dbLayanan . '.data_layanan.tahanan_id', 'tahanan.id')
+                            ->where('penitip.nama', 'like', "%{$search}%");
+                    });
+
+                    $sub->orWhereExists(function ($query) use ($search) {
+                        $query->select(DB::raw(1))
+                            ->from('data_titipan')
+                            ->whereColumn('data_titipan.kode_tahanan', 'tahanan.code_napi')
+                            ->where('data_titipan.nama_pengirim', 'like', "%{$search}%");
+                    });
+                });
             })
             ->orderBy('nama', 'asc')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         foreach ($tahanans as $t) {
-            // SOURCE A: Dari Layanan KAGATAU (Database: kagatau)
             $dariLayanan = DB::connection('mysql_layanan')
                 ->table('data_layanan')
                 ->leftJoin($dbSipirman . '.penitip', 'data_layanan.penitip_id', '=', 'penitip.id')
@@ -37,7 +64,6 @@ class BukuTeleponController extends Controller
                 )
                 ->get();
 
-            // SOURCE B: Dari Master Penitip Sipirman
             $dariPenitip = DB::connection('mysql')
                 ->table('penitip')
                 ->where('kode_tahanan', $t->code_napi)
@@ -50,7 +76,6 @@ class BukuTeleponController extends Controller
                 )
                 ->get();
 
-            // SOURCE C: Dari Data Titipan Barang Sipirman
             $dariTitipan = DB::connection('mysql')
                 ->table('data_titipan')
                 ->leftJoin('penitip', 'data_titipan.nik', '=', 'penitip.nik')
@@ -64,7 +89,6 @@ class BukuTeleponController extends Controller
                 )
                 ->get();
 
-            // Gabungkan dan Filter Duplikat Nama + HP
             $gabungan = $dariLayanan->concat($dariPenitip)->concat($dariTitipan);
             $t->semua_keluarga = $gabungan->filter(function($item) {
                 return !is_null($item->nama_keluarga);
