@@ -8,6 +8,7 @@ use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TahananController;
 use App\Http\Controllers\UserController; // Pastikan ini sudah di-import
+use App\Http\Controllers\PinSakuController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,4 +68,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/buku-telepon', [BukuTeleponController::class, 'index'])->name('buku-telepon.index');
     Route::delete('/buku-telepon/{id}', [BukuTeleponController::class, 'destroy'])->name('buku-telepon.destroy');
 
+    // 7. Fitur PIN Saku (Admin & User)
+    Route::get('/pin-saku', [PinSakuController::class, 'index'])->name('pin-saku.index');
+Route::put('/pin-saku/{id}', [PinSakuController::class, 'update'])->name('pin-saku.update');
 });

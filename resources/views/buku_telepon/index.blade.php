@@ -32,7 +32,7 @@
                                     value="{{ request('search') }}">
                                 <button class="btn btn-primary px-4" type="submit">Cari Data</button>
                                 @if (request('search'))
-                                    <a href="{{ route('tahanan.index') }}" class="btn btn-outline-danger" title="Reset">
+                                    <a href="{{ route('buku-telepon.index') }}" class="btn btn-outline-danger" title="Reset">
                                         <i class="bi bi-x-lg"></i>
                                     </a>
                                 @endif
@@ -43,7 +43,7 @@
             </div>
         </div>
 
-        <div class="card shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
+        <div class="card shadow-sm border-0 mb-5" style="border-radius: 15px; overflow: hidden;">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle mb-0">
@@ -74,36 +74,27 @@
                                         <tr>
                                             @if ($firstRow)
                                                 <td class="text-center fw-bold text-muted" rowspan="{{ $rowcount }}">
-                                                    {{ $tahanans->firstItem() + $index }}
+                                                    {{ ($tahanans->currentPage() - 1) * $tahanans->perPage() + $loop->parent->iteration }}
                                                 </td>
                                                 <td class="px-3 border-end" rowspan="{{ $rowcount }}">
                                                     @php
-                                                        // Ambil data dari object $t (hasil query builder)
                                                         $namaAyah = $t->nama_ayah ?? null;
-                                                        $jk = strtoupper($t->jk ?? ''); // Sesuaikan nama kolom: 'jk' atau 'jenis_kelamin'
+                                                        $jk = strtoupper($t->jk ?? ''); 
 
-                                                        // Penentuan Bin/Binti
-                                                        $binBinti =
-                                                            $jk === 'P' || $jk === 'PEREMPUAN' ? 'BINTI' : 'BIN';
+                                                        $binBinti = ($jk === 'P' || $jk === 'PEREMPUAN' || $t->jenis_kelamin == 'Wanita') ? 'BINTI' : 'BIN';
 
-                                                        // Gabungkan nama
                                                         $namaTampil = $namaAyah
-                                                            ? strtoupper($t->nama) .
-                                                                ' ' .
-                                                                $binBinti .
-                                                                ' ' .
-                                                                strtoupper($namaAyah)
+                                                            ? strtoupper($t->nama) . ' ' . $binBinti . ' ' . strtoupper($namaAyah)
                                                             : strtoupper($t->nama);
                                                     @endphp
 
                                                     <div class="fw-bold text-dark fs-6">{{ $namaTampil }}</div>
-                                                    <div class="small text-muted">ID: {{ $t->code_napi }}</div>
                                                 </td>
                                                 @php $firstRow = false; @endphp
                                             @endif
 
                                             <td class="ps-3 fw-bold text-dark">
-                                                <i class=" me-1 text-muted"></i> {{ strtoupper($kel->nama_keluarga) }}
+                                                {{ strtoupper($kel->nama_keluarga) }}
                                             </td>
                                             <td class="text-center text-muted small">{{ $kel->hubungan ?? 'Keluarga' }}
                                             </td>
@@ -120,9 +111,9 @@
                                         </tr>
                                     @endforeach
                                 @else
-                                    {{-- Jika tahanan tidak punya keluarga sama sekali --}}
                                     <tr>
-                                        <td class="text-center fw-bold text-muted">{{ $tahanans->firstItem() + $index }}
+                                        <td class="text-center fw-bold text-muted">
+                                             {{ ($tahanans->currentPage() - 1) * $tahanans->perPage() + $loop->iteration }}
                                         </td>
                                         <td class="px-3">
                                             <div class="fw-bold text-dark fs-6">{{ strtoupper($t->nama) }}</div>
@@ -143,9 +134,15 @@
                     </table>
                 </div>
             </div>
-            <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
-                {{ $tahanans->appends(request()->query())->links() }}
-            </div>
+
+            {{-- Pagination ala Index Tahanan --}}
+            @if ($tahanans->hasPages())
+                <div class="card-footer bg-white py-3 d-flex justify-content-center border-top">
+                    <div class="pagination-clean">
+                        {{ $tahanans->appends(request()->query())->onEachSide(1)->links() }}
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -157,6 +154,30 @@
 
         .italic {
             font-style: italic;
+        }
+
+        /* Pagination Clean Up (Sesuai Index Tahanan) */
+        .pagination-clean nav div:first-child,
+        .pagination-clean p {
+            display: none !important;
+        }
+
+        .pagination-clean .pagination {
+            margin-bottom: 0;
+            gap: 5px;
+        }
+
+        .pagination-clean .page-link {
+            padding: 6px 14px;
+            border-radius: 8px !important;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+
+        .pagination-clean .page-item.active .page-link {
+            background-color: #212529 !important;
+            border-color: #212529 !important;
+            color: #fff !important;
         }
     </style>
 @endsection

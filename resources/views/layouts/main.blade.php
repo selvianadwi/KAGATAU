@@ -124,6 +124,11 @@
                     </a>
                 </li>
                 <li>
+    <a href="{{ route('pin-saku.index') }}" class="nav-link {{ Request::is('pin-saku*') ? 'active' : '' }}">
+        <i class="bi bi-key-fill me-3"></i> PIN Saku WBP
+    </a>
+</li>
+                <li>
                     <a href="/penitip" class="nav-link {{ Request::is('penitip*') ? 'active' : '' }}">
                         <i class="bi bi-people-fill me-3"></i> Data Keluarga
                     </a>

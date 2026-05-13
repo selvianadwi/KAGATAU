@@ -158,7 +158,6 @@
                                                 : strtoupper($namaT);
                                         @endphp
                                         <div class="fw-bold text-dark">{{ $namaLengkap }}</div>
-                                        <div class="small text-muted" style="font-size: 0.7rem;">NAPI: {{ $codeNapi }}
                                         </div>
                                     </td>
                                     <td>{{ strtoupper($namaK) }}</td>
